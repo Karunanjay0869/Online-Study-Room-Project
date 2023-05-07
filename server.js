@@ -8,7 +8,11 @@ const {writeFile}  = require('fs')
 const app = express();
 const server = http.createServer(app);
 
-const io = socketio(server);
+const io = socketio(server, {maxHttpBufferSize: 1e7});
+
+const initRoutes = require("./src/routes");
+
+initRoutes(app);
 
 app.use(express.static(path.join(__dirname, "public")));
 
@@ -21,13 +25,14 @@ let roomBoard = {};
 
 io.on("connect", (socket) => {
   socket.on("upload", (file, fileName, callback) => {
-    console.log('------------>', {file, callback, fileName})
-
-    // save the content to the disk, for example
-    writeFile(`./assets/${fileName}`, file, (err) => {
-      console.error(err);
-      callback({ message: err ? "failure" : "success" });
-    });
+    try {
+      // save the content to the disk, for example
+      writeFile(`./assets/uploads/${fileName}`, file, (err) => {
+        callback({ message: err ? "failure" : "success" });
+      });
+    } catch (err) {
+      console.log(err)
+    }
   });
 
   socket.on("join room", (roomid, username) => {
@@ -92,8 +97,8 @@ io.on("connect", (socket) => {
     socket.to(sid).emit("new icecandidate", candidate, socket.id);
   });
 
-  socket.on("message", (msg, username, roomid) => {
-    io.to(roomid).emit("message", msg, username, moment().format("h:mm a"));
+  socket.on("message", (msg, username, roomid, href) => {
+    io.to(roomid).emit("message", msg, username, moment().format("h:mm a"), href);
   });
 
   socket.on("getCanvas", () => {

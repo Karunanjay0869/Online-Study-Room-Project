@@ -592,7 +592,11 @@ messageField.addEventListener("keyup", function (event) {
     }
 });
 
-socket.on('message', (msg, sendername, time) => {
+socket.on('message', (msg, sendername, time, href) => {
+    let msgHtml = `${msg}`
+    if (href) {
+        msgHtml = `<a href=${href} target="_blank" rel="noopener noreferrer">${msg}</a>`
+    }
     chatRoom.scrollTop = chatRoom.scrollHeight;
     chatRoom.innerHTML += `<div class="message">
     <div class="info">
@@ -600,7 +604,7 @@ socket.on('message', (msg, sendername, time) => {
         <div class="time">${time}</div>
     </div>
     <div class="content">
-        ${msg}
+        ${msgHtml}
     </div>
 </div>`
 });
@@ -738,13 +742,22 @@ cutCall.addEventListener('click', () => {
     location.href = '/';
 })
 
+const validateAndParseFilename = (fileName) => {
+    return fileName.split(' ').join('_').concat('_').concat(new Date().getTime())
+}
+
 fileUploadButton.addEventListener("change", function () {
     const file = fileUploadButton.files[0];
-    socket.emit("upload", file, file.name, function callback (status) {
+    const fileName = validateAndParseFilename(file.name);
+    socket.emit("upload", file, fileName, function callback (status) {
         console.log(status);
-        const fileName = file.name;
-        const message = `${fileName} has been uploaded.`;
-        socket.emit('message', message, username, roomid)
+        const isSuccess = status.message === 'success'
+        if (isSuccess) {
+            const message = `${fileName} has been uploaded.`;
+            socket.emit('message', message, username, roomid)
+            socket.emit('message', fileName, username, roomid, `/files/${fileName}`)
+        }
+        
     });
 })
 
