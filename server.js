@@ -33,7 +33,7 @@ io.on("connect", (socket) => {
     } catch (err) {
       console.log(err)
     }
-  });
+});
 
   socket.on("join room", (roomid, username) => {
     socket.join(roomid);
